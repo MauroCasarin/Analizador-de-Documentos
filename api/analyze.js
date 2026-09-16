@@ -1,22 +1,22 @@
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
+import { extractText } from "unpdf";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || process.env.AnalizadordeDocumentos;
   if (!apiKey) {
-    return res.status(500).json({
-      error: "GEMINI_API_KEY no está configurada en las variables de entorno de Vercel.",
+    return res.status(401).json({
+      error: "La clave de API de Groq no está configurada. Ve a tu proyecto en Vercel > Settings > Environment Variables, agrega AnalizadordeDocumentos con tu clave y haz un Redeploy.",
     });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const groq = new Groq({ apiKey });
     const { file, prompt, fieldsToExtract } = req.body;
 
     const parts = [];
@@ -62,7 +62,6 @@ export default async function handler(req, res) {
           parts.push({ text: sheetText });
         } catch (e) {
           console.warn("Fallo al leer Excel con XLSX:", e?.message);
-          parts.push({ inlineData: { mimeType: "application/octet-stream", data: file.data } });
         }
       }
       // 2. Word (.docx)
@@ -77,7 +76,6 @@ export default async function handler(req, res) {
           parts.push({ text: docText });
         } catch (e) {
           console.warn("Fallo al leer Word con mammoth:", e?.message);
-          parts.push({ inlineData: { mimeType: "application/octet-stream", data: file.data } });
         }
       }
       // 3. Documentos de texto
@@ -98,29 +96,26 @@ export default async function handler(req, res) {
             text: `--- DOCUMENTO: ${file.name || "Archivo"} (${mimeType}) ---\n${textContent}\n--- FIN DEL DOCUMENTO ---`,
           });
         } catch {
-          parts.push({ inlineData: { mimeType, data: file.data } });
+          // Fallo al decodificar texto, se ignora
         }
       }
-      // 4. PDF (extracción digital multipágina + visión multimodal)
+      // 4. PDF (extracción digital multipágina con unpdf)
       else if (fileName.endsWith(".pdf") || mimeType === "application/pdf") {
         try {
-          const parser = new PDFParse({ data: buffer });
-          const pdfData = await parser.getText();
-          if (pdfData && pdfData.text && pdfData.text.trim()) {
+          const uint8 = new Uint8Array(buffer);
+          const pdfData = await extractText(uint8, { mergePages: true });
+          if (pdfData && pdfData.text && typeof pdfData.text === "string" && pdfData.text.trim()) {
             extractedDocText = pdfData.text;
             parts.push({
-              text: `--- TEXTO DIGITAL EXTRAÍDO DE TODAS LAS PÁGINAS DEL PDF (${file.name || "documento.pdf"} - ${pdfData.total || 1} páginas) ---\n${pdfData.text}\n--- FIN DEL TEXTO DIGITAL DEL PDF ---`,
+              text: `--- TEXTO DIGITAL EXTRAÍDO DE TODAS LAS PÁGINAS DEL PDF (${file.name || "documento.pdf"} - ${pdfData.totalPages || 1} páginas) ---\n${pdfData.text}\n--- FIN DEL TEXTO DIGITAL DEL PDF ---`,
             });
           }
         } catch (pdfErr) {
-          console.warn("Aviso al extraer texto con pdf-parse:", pdfErr?.message);
+          console.warn("Aviso al extraer texto del PDF:", pdfErr?.message);
         }
-
-        parts.push({
-          inlineData: { mimeType: "application/pdf", data: file.data },
-        });
-      } else {
-        // 5. Imágenes u otros formatos
+        // Nota: Groq no soporta application/pdf como archivo binario multimodal, así que dependemos 100% de la extracción de texto.
+      } else if (mimeType.startsWith("image/")) {
+        // 5. Imágenes (Vision)
         parts.push({
           inlineData: { mimeType, data: file.data },
         });
@@ -293,62 +288,66 @@ REGLAS DE VERIFICACIÓN DE CUIT / CUIL Y EMPRESAS (RAZÓN SOCIAL):
      No digas que no figuran. Extrae y lista TODOS los CUIT / CUIL y Empresas / Razones Sociales que efectivamente figuren dentro del documento adjunto indicando "Sí" para cada uno.
   F. En este modo de verificación, NO incluyas información de stands, módulos, medidas, horarios ni datos secundarios ajenos a CUIT y Razón Social.`;
 
-    // Modelos soportados según SDK @google/genai, priorizando disponibilidad y precisión
-    const modelsToTry = [
-      "gemini-3.8-flash",
-      "gemini-flash-latest",
-      "gemini-3.1-flash-lite",
-    ];
-    let lastError = null;
-    let resultText = "";
-    let usedModel = "";
+    // Preparar los mensajes para Groq
+    let hasImage = false;
+    const contentArray = [];
 
-    for (const modelName of modelsToTry) {
-      // Reintentos automáticos para mitigar picos temporales de demanda (503 / 429)
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          if (attempt > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+    for (const part of parts) {
+      if (part.text) {
+        contentArray.push({ type: "text", text: part.text });
+      } else if (part.inlineData) {
+        hasImage = true;
+        contentArray.push({
+          type: "image_url",
+          image_url: {
+            url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
           }
-          const response = await ai.models.generateContent({
-            model: modelName,
-            contents: { parts },
-            config: {
-              systemInstruction,
-              temperature: 0.1,
-            },
-          });
-
-          if (response && response.text) {
-            resultText = response.text;
-            usedModel = modelName;
-            break;
-          }
-        } catch (err) {
-          lastError = err;
-          console.warn(`Aviso: Error con modelo ${modelName} (intento ${attempt + 1}):`, err?.message);
-          // Si el modelo da 404 (no existe), no reintentar ese modelo
-          if (err?.status === 404 || err?.message?.includes("404")) {
-            break;
-          }
-        }
+        });
       }
-      if (resultText) break;
     }
 
+    let modelName = "llama-3.3-70b-versatile";
+    try {
+      const modelsResponse = await groq.models.list();
+      const availableModels = modelsResponse.data || [];
+      if (hasImage) {
+        const visionModels = availableModels.filter(m => m.input_modalities?.includes("image"));
+        modelName = visionModels.length > 0 ? visionModels[0].id : "llama-3.2-90b-vision-preview";
+      } else {
+        const textModels = availableModels.filter(m => m.input_modalities?.includes("text") && !m.id.includes("prompt-guard"));
+        const preferred = textModels.find(m => m.id.includes("120b") || m.id.includes("70b"));
+        modelName = preferred ? preferred.id : (textModels[0]?.id || "llama-3.3-70b-versatile");
+      }
+    } catch (e) {
+      // Fallback a los predeterminados de Groq si falla el listado
+      console.error("GROQ LIST ERROR", e); modelName = hasImage ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
+    }
+
+    const response = await groq.chat.completions.create({
+      model: modelName,
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: contentArray }
+      ],
+      temperature: 0.1,
+    });
+
+    const resultText = response.choices[0]?.message?.content;
+
     if (!resultText) {
-      throw lastError || new Error("No se pudo obtener respuesta del modelo.");
+      throw new Error("No se pudo obtener respuesta del modelo de Groq.");
     }
 
     return res.status(200).json({
       success: true,
       result: resultText,
-      model: usedModel,
+      model: modelName,
     });
   } catch (error) {
-    console.error("Error en endpoint Vercel:", error);
+    console.error("Error en endpoint Vercel con Groq:", error);
     return res.status(500).json({
-      error: error?.message || "Error al procesar con la API de Gemini.",
+      error: error?.message || "Error al procesar con la API de Groq.",
     });
   }
 }
+

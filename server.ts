@@ -2,11 +2,11 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import dotenv from "dotenv";
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
+import { extractText } from "unpdf";
 
 dotenv.config();
 
@@ -20,47 +20,33 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Initialize Gemini Client
-  const apiKey = process.env.GEMINI_API_KEY;
-  let ai: GoogleGenAI | null = null;
+  // Initialize Groq Client
+  const apiKey = process.env.GROQ_API_KEY || process.env.AnalizadordeDocumentos;
+  let groq: Groq | null = null;
   if (apiKey) {
-    ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
+    groq = new Groq({ apiKey });
   }
 
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({
       status: "ok",
-      hasApiKey: !!process.env.GEMINI_API_KEY,
+      hasApiKey: !!apiKey,
     });
   });
 
   // Document analysis endpoint
   app.post("/api/analyze", async (req, res) => {
     try {
-      const activeApiKey = process.env.GEMINI_API_KEY;
+      const activeApiKey = process.env.GROQ_API_KEY || process.env.AnalizadordeDocumentos;
       if (!activeApiKey) {
         return res.status(500).json({
-          error: "La clave GEMINI_API_KEY no está configurada en las variables de entorno del servidor.",
+          error: "La clave de API de Groq no está configurada en las variables de entorno del servidor.",
         });
       }
 
-      if (!ai) {
-        ai = new GoogleGenAI({
-          apiKey: activeApiKey,
-          httpOptions: {
-            headers: {
-              "User-Agent": "aistudio-build",
-            },
-          },
-        });
+      if (!groq) {
+        groq = new Groq({ apiKey: activeApiKey });
       }
 
       const { file, prompt, fieldsToExtract } = req.body;
@@ -114,9 +100,6 @@ async function startServer() {
             parts.push({ text: sheetText });
           } catch (e: any) {
             console.warn("Fallo al leer Excel con XLSX:", e?.message);
-            parts.push({
-              inlineData: { mimeType: "application/octet-stream", data: file.data },
-            });
           }
         }
         // 2. Detección y procesamiento de documentos Word (.docx)
@@ -131,9 +114,6 @@ async function startServer() {
             parts.push({ text: docText });
           } catch (e: any) {
             console.warn("Fallo al leer Word con mammoth:", e?.message);
-            parts.push({
-              inlineData: { mimeType: "application/octet-stream", data: file.data },
-            });
           }
         }
         // 3. Documentos de texto plano / markdown / csv / json
@@ -154,38 +134,25 @@ async function startServer() {
               text: `--- DOCUMENTO: ${file.name || "Archivo"} (${mimeType}) ---\n${textContent}\n--- FIN DEL DOCUMENTO ---`,
             });
           } catch {
-            parts.push({
-              inlineData: {
-                mimeType,
-                data: file.data,
-              },
-            });
+            // Ignorar
           }
         }
-        // 4. Documentos PDF (extracción de texto digital multipágina + visión multimodal)
+        // 4. Documentos PDF (extracción de texto digital multipágina con unpdf)
         else if (fileName.endsWith(".pdf") || mimeType === "application/pdf") {
           try {
-            const parser = new PDFParse({ data: buffer });
-            const pdfData = await parser.getText();
-            if (pdfData && pdfData.text && pdfData.text.trim()) {
+            const uint8 = new Uint8Array(buffer);
+            const pdfData = await extractText(uint8, { mergePages: true });
+            if (pdfData && pdfData.text && typeof pdfData.text === "string" && pdfData.text.trim()) {
               extractedDocText = pdfData.text;
               parts.push({
-                text: `--- TEXTO DIGITAL EXTRAÍDO DE TODAS LAS PÁGINAS DEL PDF (${file.name || "documento.pdf"} - ${pdfData.total || 1} páginas) ---\n${pdfData.text}\n--- FIN DEL TEXTO DIGITAL DEL PDF ---`,
+                text: `--- TEXTO DIGITAL EXTRAÍDO DE TODAS LAS PÁGINAS DEL PDF (${file.name || "documento.pdf"} - ${pdfData.totalPages || 1} páginas) ---\n${pdfData.text}\n--- FIN DEL TEXTO DIGITAL DEL PDF ---`,
               });
             }
           } catch (pdfErr: any) {
-            console.warn("Aviso al extraer texto con pdf-parse:", pdfErr?.message);
+            console.warn("Aviso al extraer texto del PDF:", pdfErr?.message);
           }
-
-          // Adjuntar también los datos binarios del PDF para soporte multimodal (tablas, firmas, escaneos)
-          parts.push({
-            inlineData: {
-              mimeType: "application/pdf",
-              data: file.data,
-            },
-          });
-        } else {
-          // 5. Imágenes (PNG, JPG, WEBP, etc.) u otros formatos binarios
+        } else if (mimeType.startsWith("image/")) {
+          // 5. Imágenes (PNG, JPG, WEBP, etc.)
           parts.push({
             inlineData: {
               mimeType,
@@ -378,62 +345,64 @@ REGLAS DE VERIFICACIÓN DE CUIT / CUIL Y EMPRESAS (RAZÓN SOCIAL):
      No digas que no figuran. Extrae y lista TODOS los CUIT / CUIL y Empresas / Razones Sociales que efectivamente figuren dentro del documento adjunto indicando "Sí" para cada uno.
   F. En este modo de verificación, NO incluyas información de stands, módulos, medidas, horarios ni datos secundarios ajenos a CUIT y Razón Social.`;
 
-      // Modelos soportados según SDK @google/genai, priorizando disponibilidad y precisión
-      const modelsToTry = [
-        "gemini-3.8-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
-      ];
-      let lastError: any = null;
-      let resultText = "";
-      let usedModel = "";
+      // Preparar los mensajes para Groq
+      let hasImage = false;
+      const contentArray: any[] = [];
 
-      for (const modelName of modelsToTry) {
-        // Reintentos automáticos para mitigar picos temporales de demanda (503 / 429)
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            if (attempt > 0) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+      for (const part of parts) {
+        if (part.text) {
+          contentArray.push({ type: "text", text: part.text });
+        } else if (part.inlineData) {
+          hasImage = true;
+          contentArray.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
             }
-            const response = await ai.models.generateContent({
-              model: modelName,
-              contents: { parts },
-              config: {
-                systemInstruction,
-                temperature: 0.1,
-              },
-            });
-
-            if (response && response.text) {
-              resultText = response.text;
-              usedModel = modelName;
-              break;
-            }
-          } catch (err: any) {
-            lastError = err;
-            console.warn(`Aviso: Error con modelo ${modelName} (intento ${attempt + 1}):`, err?.message);
-            // Si el modelo da 404 (no existe), no reintentar ese modelo
-            if (err?.status === 404 || err?.message?.includes("404")) {
-              break;
-            }
-          }
+          });
         }
-        if (resultText) break;
       }
 
+      let modelName = "llama-3.3-70b-versatile";
+      try {
+        const modelsResponse = await groq.models.list();
+        const availableModels = modelsResponse.data || [];
+        if (hasImage) {
+          const visionModels = availableModels.filter((m: any) => m.input_modalities?.includes("image"));
+          modelName = visionModels.length > 0 ? visionModels[0].id : "llama-3.2-90b-vision-preview";
+        } else {
+          const textModels = availableModels.filter((m: any) => m.input_modalities?.includes("text") && !m.id.includes("prompt-guard"));
+          const preferred = textModels.find((m: any) => m.id.includes("120b") || m.id.includes("70b"));
+          modelName = preferred ? preferred.id : (textModels[0]?.id || "llama-3.3-70b-versatile");
+        }
+      } catch (e) {
+        console.error("GROQ LIST ERROR", e); modelName = hasImage ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
+      }
+
+      const response = await groq.chat.completions.create({
+        model: modelName,
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: contentArray }
+        ],
+        temperature: 0.1,
+      });
+
+      const resultText = response.choices[0]?.message?.content;
+
       if (!resultText) {
-        throw lastError || new Error("No se pudo obtener respuesta del modelo.");
+        throw new Error("No se pudo obtener respuesta del modelo.");
       }
 
       return res.json({
         success: true,
         result: resultText,
-        model: usedModel,
+        model: modelName,
       });
     } catch (error: any) {
-      console.error("Error al procesar el análisis con Gemini:", error);
+      console.error("Error al procesar el análisis con Groq:", error);
       return res.status(500).json({
-        error: error?.message || "Ocurrió un error al procesar el documento con la API de Gemini.",
+        error: error?.message || "Ocurrió un error al procesar el documento con la API de Groq.",
       });
     }
   });
@@ -461,3 +430,4 @@ REGLAS DE VERIFICACIÓN DE CUIT / CUIL Y EMPRESAS (RAZÓN SOCIAL):
 startServer().catch((err) => {
   console.error("Error al iniciar el servidor:", err);
 });
+

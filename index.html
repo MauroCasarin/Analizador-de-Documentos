@@ -6,12 +6,12 @@
     <title>Analizador de Documentos</title>
     <meta
       name="description"
-      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Gemini AI."
+      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Groq AI."
     />
     <meta property="og:title" content="Analizador de Documentos" />
     <meta
       property="og:description"
-      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Gemini AI."
+      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Groq AI."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -195,7 +195,7 @@
             <div class="flex items-center space-x-2">
               <h1 class="text-lg font-bold text-slate-900 tracking-tight">Analizador de Documentos</h1>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
-                Gemini 3.8 Flash
+                Llama 3 (Groq)
               </span>
             </div>
             <p class="text-xs text-slate-500 hidden sm:block">Extracción estructurada y precisa de PDFs, imágenes y textos</p>
@@ -545,7 +545,7 @@
                   </div>
                 </div>
                 <div>
-                  <h3 id="loadingTitle" class="text-sm font-bold text-slate-800">Analizando con Gemini 3.8 Flash...</h3>
+                  <h3 id="loadingTitle" class="text-sm font-bold text-slate-800">Analizando con Llama 3 (Groq)...</h3>
                   <p id="loadingSubtitle" class="text-xs text-slate-500 mt-1">
                     Extrayendo campos y formateando tablas de datos estructuradas...
                   </p>
@@ -905,7 +905,7 @@
       promptInput.addEventListener("input", updateCharCount);
 
       // ==========================================
-      // Envío y Conexión con la API de Gemini
+      // Envío y Conexión con la API de Groq
       // ==========================================
       btnAnalyze.addEventListener("click", () => performAnalysis());
       btnRetry.addEventListener("click", () => performAnalysis());
@@ -955,11 +955,11 @@
             throw new Error(errData.error || `Error ${response.status}: Falló el procesamiento en el servidor.`);
           }
 
-          throw new Error("No se pudo conectar con el endpoint /api/analyze. Asegúrate de configurar GEMINI_API_KEY en tu entorno o desplegarlo en Vercel con las funciones de API activas.");
+          throw new Error("No se pudo conectar con el endpoint /api/analyze. Asegúrate de configurar la clave de Groq en tu entorno o desplegarlo en Vercel con las funciones de API activas.");
 
         } catch (error) {
           console.error("Error al procesar:", error);
-          showError(error.message || "Ocurrió un error inesperado al consultar la API de Gemini.");
+          showError(error.message || "Ocurrió un error inesperado al consultar la API de Groq.");
         } finally {
           setLoading(false);
         }
