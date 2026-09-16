@@ -114,15 +114,15 @@ async function startServer() {
         text: userQuery,
       });
 
-      const systemInstruction = `Eres un asistente experto de alto nivel en extracción y análisis minucioso de datos en documentos (PDF, imágenes, planos, contratos y textos).
-Tu objetivo es analizar el archivo adjunto junto con la consulta y campos solicitados por el usuario y extraer con la máxima precisión los datos requeridos.
+      const systemInstruction = `Eres un asistente experto en extracción y análisis de datos en documentos (PDF, imágenes, planos y textos).
+Tu objetivo es extraer con máxima precisión los datos solicitados por el usuario.
 
 REGLAS DE RESPUESTA:
-1. Extrae explícitamente los campos requeridos (ej. Nombre del evento, Fechas/Días, Ubicación/Lugar, Medidas de lote/stand según empresa o número de lote, Horario de armado/desmontaje, Qué tipo de seguro solicitan para el ingreso, Dónde enviar la información que solicitan - mail o teléfono, etc.).
-2. Presenta la información extraída estructurada en un formato claro (usa Markdown enriquecido, tablas comparativas y listas con viñetas claras).
-3. Si un dato solicitado no está presente en el documento, indica explícitamente: "No especificado en el archivo".
-4. Si encuentras detalles relevantes adicionales vinculados a la solicitud, agrégalos en una sección llamada "### 📌 Notas clave".
-5. Mantén un tono profesional, preciso, riguroso y directo.
+1. Sé estrictamente conciso, directo y sin redundancias ni introducciones innecesarias (para optimizar consumo y lectura rápida).
+2. Extrae explícitamente los campos requeridos (ej. Nombre del evento, Fechas/Días, Ubicación/Lugar, Medidas de lote/stand según empresa o número de lote, Horario de armado/desmontaje, Tipo de seguro exigido para el ingreso, Dónde enviar la información - mail o teléfono, etc.).
+3. Presenta la información estructurada con tablas breves o viñetas limpias.
+4. Si un dato solicitado no está presente en el documento, indica explícitamente: "No especificado en el archivo".
+5. Si encuentras algún dato crítico adicional imprescindible, inclúyelo de forma breve en "### 📌 Notas clave" (máximo 2 a 4 líneas).
 6. Verifica minuciosamente la información para evitar confusiones o mala información.`;
 
       // Intentar con gemini-flash-latest y fallback a gemini-3.8-flash / gemini-3.1-flash-lite

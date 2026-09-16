@@ -158,7 +158,7 @@
         border-radius: 0.5rem;
       }
       @media print {
-        header, #leftColumn, #actionToolbar, #codeModal {
+        header, footer, #leftColumn, #actionToolbar {
           display: none !important;
         }
         #rightColumn {
@@ -187,28 +187,9 @@
           </div>
         </div>
 
-        <!-- Botones de Acción Superior -->
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button
-            id="btnDownloadHtml"
-            type="button"
-            title="Descargar este archivo index.html para Vercel o uso local"
-            class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 transition-colors"
-          >
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span class="hidden md:inline">Descargar</span>
-            <span>index.html</span>
-          </button>
-
-          <button
-            id="btnViewCode"
-            type="button"
-            title="Ver o copiar el código fuente completo"
-            class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-xs"
-          >
-            <i data-lucide="code" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">Ver Código</span>
-          </button>
+        <!-- Acciones del Header -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-500 font-medium hidden sm:inline">Modo extracción optimizada</span>
         </div>
       </div>
     </header>
@@ -307,61 +288,38 @@
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 data-preset="evento"
-                class="preset-btn text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-start space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
               >
                 <span class="p-1 rounded bg-blue-100 text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
                 </span>
-                <div>
-                  <div class="font-semibold text-slate-900">Datos de Evento</div>
-                  <div class="text-[11px] text-slate-500 line-clamp-1">Fechas, lugar, horarios, seguro</div>
-                </div>
+                <span class="font-semibold text-slate-800 truncate">Datos Evento</span>
               </button>
 
               <button
                 type="button"
                 data-preset="medidas"
-                class="preset-btn text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-start space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
               >
                 <span class="p-1 rounded bg-emerald-100 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="ruler" class="w-3.5 h-3.5"></i>
                 </span>
-                <div>
-                  <div class="font-semibold text-slate-900">Extracción de Medidas</div>
-                  <div class="text-[11px] text-slate-500 line-clamp-1">Lotes, cotas, dimensiones</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                data-preset="resumen"
-                class="preset-btn text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-start space-x-2"
-              >
-                <span class="p-1 rounded bg-purple-100 text-purple-700 group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
-                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                </span>
-                <div>
-                  <div class="font-semibold text-slate-900">Resumen General</div>
-                  <div class="text-[11px] text-slate-500 line-clamp-1">Objetivos, hitos y puntos clave</div>
-                </div>
+                <span class="font-semibold text-slate-800 truncate">Medidas Lote</span>
               </button>
 
               <button
                 type="button"
                 data-preset="seguros"
-                class="preset-btn text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-start space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
               >
                 <span class="p-1 rounded bg-amber-100 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
                 </span>
-                <div>
-                  <div class="font-semibold text-slate-900">Seguros y Accesos</div>
-                  <div class="text-[11px] text-slate-500 line-clamp-1">Pólizas, ART, EPP, envío</div>
-                </div>
+                <span class="font-semibold text-slate-800 truncate">Seguros/Accesos</span>
               </button>
             </div>
           </div>
@@ -560,39 +518,28 @@
       </div>
     </main>
 
-    <!-- Modal de Código Fuente Completo (para exportar y desplegar directamente a Vercel) -->
-    <div id="codeModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
-      <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="file-code" class="w-5 h-5 text-blue-600"></i>
-            <div>
-              <h3 class="text-sm font-bold text-slate-900">Código SPA Completo (index.html)</h3>
-              <p class="text-xs text-slate-500">Listo para guardar y desplegar en Vercel vía GitHub</p>
-            </div>
-          </div>
-          <button id="btnCloseModal" type="button" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
-        </div>
-        <div class="p-4 flex-1 overflow-y-auto bg-slate-950">
-          <pre><code id="sourceCodeBlock" class="text-xs font-mono text-emerald-400 whitespace-pre"></code></pre>
-        </div>
-        <div class="p-3.5 border-t border-slate-200 flex items-center justify-between bg-white">
-          <span class="text-xs text-slate-500">Un único archivo HTML con Vanilla JS + Tailwind CSS</span>
-          <div class="flex space-x-2">
-            <button
-              id="btnCopySource"
-              type="button"
-              class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-            >
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              <span id="copySourceText">Copiar Todo</span>
-            </button>
-          </div>
-        </div>
+    <!-- Pie de Página -->
+    <footer class="mt-8 border-t border-slate-200 bg-white/70 backdrop-blur-xs py-5">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 text-xs text-slate-600">
+        <span class="font-medium text-slate-500">Desarrollado por:</span>
+        <a
+          href="https://www.instagram.com/3d_mc_3d/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 hover:bg-pink-50 hover:text-pink-700 hover:border-pink-300 border border-slate-200 transition-all font-medium group"
+          title="Ver perfil de Instagram"
+        >
+          <img
+            src="https://avatars.githubusercontent.com/u/70527971?v=4&size=64"
+            alt="3d_mc_3d"
+            referrerpolicy="no-referrer"
+            class="w-6 h-6 rounded-full object-cover border border-slate-300 shadow-2xs group-hover:scale-105 transition-transform"
+          />
+          <span class="text-slate-800 group-hover:text-pink-700">@3d_mc_3d</span>
+          <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-pink-500"></i>
+        </a>
       </div>
-    </div>
+    </footer>
 
     <!-- Script de la Aplicación -->
     <script>
@@ -644,13 +591,6 @@
       const copyText = document.getElementById("copyText");
       const btnDownloadMd = document.getElementById("btnDownloadMd");
       const btnPrint = document.getElementById("btnPrint");
-      const btnDownloadHtml = document.getElementById("btnDownloadHtml");
-      const btnViewCode = document.getElementById("btnViewCode");
-      const codeModal = document.getElementById("codeModal");
-      const btnCloseModal = document.getElementById("btnCloseModal");
-      const sourceCodeBlock = document.getElementById("sourceCodeBlock");
-      const btnCopySource = document.getElementById("btnCopySource");
-      const copySourceText = document.getElementById("copySourceText");
 
       // Inicializar iconos Lucide
       function refreshIcons() {
@@ -777,19 +717,15 @@
       // ==========================================
       const presets = {
         evento: {
-          prompt: "Extrae el nombre del evento, fecha exacta y días de realización, ubicación detallada del lugar, medidas de lote según nombre de empresa o número de lote, horario completo de armado y desmontaje, qué tipo de seguro solicitan para el ingreso y a dónde o a quién enviar la documentación requerida (email o teléfono).",
+          prompt: "Extrae de forma concisa y directa el nombre del evento, fechas/días, ubicación exacta, medidas de lote según empresa o número, horario de armado, tipo de seguro requerido y canal de envío (email/teléfono).",
           fields: "Nombre del evento, Fechas y días, Ubicación/Lugar, Horario de armado y desarme, Medidas de lote/stand, Tipo de seguro exigido para ingreso, Dónde enviar la información (email / teléfono)",
         },
         medidas: {
-          prompt: "Extrae de forma minuciosa todas las medidas, cotas y dimensiones de lotes o stands especificadas en el archivo, asociando cada dimensión con el nombre de la empresa solicitante o su número de lote. Incluye límites de altura, metros cuadrados y restricciones espaciales.",
+          prompt: "Extrae de forma concisa y directa todas las medidas, cotas y dimensiones de lotes o stands por empresa adjudicada o número de lote, alturas máximas y restricciones esenciales.",
           fields: "Número de lote / stand, Nombre de empresa adjudicada, Dimensiones y medidas (m² / metros de frente y fondo), Altura máxima permitida, Restricciones de montaje",
         },
-        resumen: {
-          prompt: "Elabora un resumen ejecutivo de alta precisión que sintetice el objeto del documento, cronograma de fechas límite, obligaciones principales de las partes, especificaciones técnicas y los contactos de coordinación.",
-          fields: "Objeto/Tema central, Fechas clave y plazos límite, Obligaciones principales, Responsables, Datos de contacto",
-        },
         seguros: {
-          prompt: "Identifica detalladamente todos los requisitos de pólizas de seguro (ART con cláusula de no repetición, Responsabilidad Civil), coberturas requeridas para el ingreso al predio, documentación del personal y canales oficiales de acreditación.",
+          prompt: "Extrae de forma concisa los requisitos exactos de seguros (ART con cláusula de no repetición, Responsabilidad Civil), coberturas exigidas y contacto/correo de envío.",
           fields: "Tipo de póliza exigida, Cláusula de no repetición, Montos mínimos asegurados, Documentación del personal de armado, Correo o teléfono de recepción de seguros",
         },
       };
@@ -988,58 +924,6 @@
 
       btnPrint.addEventListener("click", () => {
         window.print();
-      });
-
-      // ==========================================
-      // Descarga directa del archivo index.html
-      // ==========================================
-      async function getCleanSourceCode() {
-        try {
-          const res = await fetch("/index.html");
-          if (res.ok) {
-            return await res.text();
-          }
-        } catch (e) {
-          console.warn("No se pudo obtener /index.html por fetch, usando outerHTML:", e);
-        }
-        return "<!doctype html>\n" + document.documentElement.outerHTML;
-      }
-
-      btnDownloadHtml.addEventListener("click", async () => {
-        const htmlContent = await getCleanSourceCode();
-        const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "index.html";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-
-      // Ver y Copiar código completo
-      btnViewCode.addEventListener("click", async () => {
-        const htmlContent = await getCleanSourceCode();
-        sourceCodeBlock.textContent = htmlContent;
-        codeModal.classList.remove("hidden");
-        codeModal.classList.add("flex");
-        refreshIcons();
-      });
-
-      btnCloseModal.addEventListener("click", () => {
-        codeModal.classList.add("hidden");
-        codeModal.classList.remove("flex");
-      });
-
-      btnCopySource.addEventListener("click", async () => {
-        const htmlContent = await getCleanSourceCode();
-        navigator.clipboard.writeText(htmlContent).then(() => {
-          copySourceText.textContent = "¡Código Copiado!";
-          setTimeout(() => {
-            copySourceText.textContent = "Copiar Todo";
-          }, 2000);
-        });
       });
     </script>
   </body>
