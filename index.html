@@ -308,8 +308,8 @@
               <button
                 type="button"
                 data-preset="cuit"
-                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
-                title="Verificar y extraer CUIT, Razón Social y Empresas"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
+                title="Verificar si CUIT / CUIL y Razón Social figuran o no en el documento"
               >
                 <span class="p-1 rounded bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
@@ -357,17 +357,30 @@
             <div class="flex items-center justify-between">
               <label for="fieldsInput" class="text-sm font-semibold text-slate-900 flex items-center space-x-2">
                 <i data-lucide="list-checks" class="w-4 h-4 text-blue-600"></i>
-                <span>Campos específicos a recaudar</span>
+                <span>Campos específicos o lista a verificar</span>
               </label>
-              <span class="text-[11px] text-slate-500">Separar por comas</span>
+              <span class="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                <i data-lucide="file-spreadsheet" class="w-3 h-3"></i>
+                Admite Excel (con comillas y tabulaciones)
+              </span>
             </div>
 
             <textarea
               id="fieldsInput"
-              rows="2"
-              class="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-y min-h-[52px] font-mono"
-              placeholder="Ej: Nombre del evento, Fechas, Medidas de lote, Horario de armado, Tipo de seguro, Email o teléfono de envío"
+              rows="4"
+              class="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-y min-h-[90px] font-mono leading-relaxed"
+              placeholder='Ejemplo copiado de Excel (con o sin comillas):&#10;"30-71471988-9"	"NSJ Group SA"&#10;"30-51717562-1"	"ARGENTINA COMMERCIAL PROPERTIES S.A."&#10;"30-66843278-2"	"Quinto Centenario SA"'
             ></textarea>
+
+            <div id="excelDetectedBadge" class="hidden text-[11px] text-indigo-700 bg-indigo-50/80 px-2.5 py-1 rounded-md border border-indigo-200 items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="check-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span>Formato Excel detectado: comillas y tabulaciones normalizadas automáticamente.</span>
+              </span>
+              <button id="btnCleanExcelQuotes" type="button" class="text-[10px] font-semibold underline hover:text-indigo-900">
+                Limpiar comillas visibles
+              </button>
+            </div>
 
             <!-- Chips de sugerencias rápidas -->
             <div class="flex flex-wrap gap-1.5 pt-1">
@@ -710,10 +723,12 @@
           // Obtener base64 puro separando el prefijo data:...;base64,
           const base64Data = result.split(",")[1];
           
+          const detectedMime = file.type || getMimeFromExtension(file.name);
           state.currentFile = {
             name: file.name,
             size: file.size,
-            type: file.type || getMimeFromExtension(file.name),
+            type: detectedMime,
+            mimeType: detectedMime,
             data: base64Data,
           };
 
@@ -774,8 +789,9 @@
       // ==========================================
       const presets = {
         cuit: {
-          prompt: "Verifica y extrae de forma concisa y directa el CUIT de cada empresa o persona mencionada, la razón social, nombre de fantasía o empresa adjudicada, números de lote/stand asociados y estado fiscal o de acreditación si figura en el documento.",
-          fields: "Número de CUIT / CUIL, Razón Social / Nombre de la empresa, Nombre de fantasía o marca, Número de lote / stand o módulo asignado, Representante legal o persona de contacto",
+          prompt: "Verifica si los CUIT / CUIL y RAZÓN SOCIAL indicados figuran o no en el documento adjunto. Indica únicamente una tabla con las columnas: | CUIT/CUIL | Razón Social / Empresa | ¿Figura en el documento? (Sí / No) | Detalle / Coincidencia encontrada |.\n(Si no se escribieron CUITs a contrastar, busca, extrae y lista TODOS los CUIT / CUIL y Empresas que efectivamente figuren en el archivo adjunto).",
+          fields: "",
+          placeholder: "Ingresa los CUITs y Razones Sociales a verificar (ej: 30-71234567-8 Empresa S.A., 20-12345678-9 Juan Pérez). Si lo dejas vacío, extraerá y verificará todos los que figuren en el documento."
         },
         evento: {
           prompt: "Extrae de forma concisa y directa el nombre del evento, fechas/días, ubicación exacta, medidas de lote según empresa o número, horario de armado, tipo de seguro requerido y canal de envío (email/teléfono).",
@@ -797,6 +813,9 @@
           if (presets[key]) {
             promptInput.value = presets[key].prompt;
             fieldsInput.value = presets[key].fields;
+            if (presets[key].placeholder) {
+              fieldsInput.placeholder = presets[key].placeholder;
+            }
             updateCharCount();
           }
         });
@@ -834,9 +853,49 @@
         });
       });
 
+      // Detección y normalización amigable de datos pegados desde Excel
+      const excelDetectedBadge = document.getElementById("excelDetectedBadge");
+      const btnCleanExcelQuotes = document.getElementById("btnCleanExcelQuotes");
+
+      function checkExcelFormat() {
+        const val = fieldsInput.value;
+        if (excelDetectedBadge) {
+          if (val.includes('"') || val.includes('\t') || val.includes('”') || val.includes('“')) {
+            excelDetectedBadge.classList.remove("hidden");
+            excelDetectedBadge.classList.add("flex");
+          } else {
+            excelDetectedBadge.classList.add("hidden");
+            excelDetectedBadge.classList.remove("flex");
+          }
+        }
+      }
+
+      fieldsInput.addEventListener("input", checkExcelFormat);
+      fieldsInput.addEventListener("paste", () => {
+        setTimeout(checkExcelFormat, 50);
+      });
+
+      if (btnCleanExcelQuotes) {
+        btnCleanExcelQuotes.addEventListener("click", () => {
+          // Limpia comillas dobles, simples y normaliza tabulaciones de Excel a separador legible
+          fieldsInput.value = fieldsInput.value
+            .replace(/["'“”«»]/g, "")
+            .replace(/\t+/g, " | ")
+            .split("\n")
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join("\n");
+          checkExcelFormat();
+        });
+      }
+
       btnResetFields.addEventListener("click", () => {
         promptInput.value = "";
         fieldsInput.value = "";
+        if (excelDetectedBadge) {
+          excelDetectedBadge.classList.add("hidden");
+          excelDetectedBadge.classList.remove("flex");
+        }
         updateCharCount();
       });
 
@@ -948,9 +1007,9 @@
         // Parsear markdown con Marked
         let htmlContent = marked.parse(markdownText);
 
-        // Asegurar que cualquier mención de "No especificado", "No encontrado" o "No figura" se resalte en rojo llamativo
+        // Asegurar que cualquier mención de "No especificado", "No encontrado", "No figura" o "No" se resalte en rojo llamativo
         htmlContent = htmlContent.replace(
-          /(No especificado en el archivo|No especificado|No encontrado en el archivo|No encontrado|No figura en el documento|No figura)/gi,
+          /(No especificado en el archivo|No especificado|No encontrado en el documento|No encontrado en el archivo|No encontrado|No figura en el documento|No figura en el archivo|No figura|\bNo\b(?=\s*<\/td>|\s*<\/span>|\s*$))/gi,
           (match) => `<span class="highlight-missing text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-200">${match}</span>`
         );
 
