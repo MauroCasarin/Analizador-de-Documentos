@@ -6,12 +6,12 @@
     <title>Analizador de Documentos</title>
     <meta
       name="description"
-      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, imágenes y texto con Gemini AI."
+      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Gemini AI."
     />
     <meta property="og:title" content="Analizador de Documentos" />
     <meta
       property="og:description"
-      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, imágenes y texto con Gemini AI."
+      content="Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Gemini AI."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -157,6 +157,21 @@
         color: #f8fafc;
         border-radius: 0.5rem;
       }
+      /* Resaltado llamativo en rojo para datos no especificados o no encontrados */
+      .highlight-missing,
+      .markdown-content .highlight-missing {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #dc2626;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        font-weight: 700;
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        box-shadow: 0 1px 2px rgba(220, 38, 38, 0.05);
+      }
       @media print {
         header, footer, #leftColumn, #actionToolbar {
           display: none !important;
@@ -208,7 +223,7 @@
                 <i data-lucide="upload-cloud" class="w-4 h-4 text-blue-600"></i>
                 <span>Documento o Archivo</span>
               </label>
-              <span class="text-xs text-slate-500 font-mono">PDF, PNG, JPG, TXT</span>
+              <span class="text-xs text-slate-500 font-mono">PDF, XLSX, DOCX, TXT, IMG</span>
             </div>
 
             <!-- Dropzone -->
@@ -219,7 +234,7 @@
               <input
                 type="file"
                 id="fileInput"
-                accept=".pdf,image/png,image/jpeg,image/webp,image/jpg,.txt,.md,.csv,.json"
+                accept=".pdf,.xlsx,.xls,.docx,.doc,image/png,image/jpeg,image/webp,image/jpg,.txt,.md,.csv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
                 class="hidden"
               />
 
@@ -233,7 +248,7 @@
                     <span class="text-blue-600 underline underline-offset-2">Haz clic para buscar</span> o arrastra tu archivo aquí
                   </p>
                   <p class="text-xs text-slate-500 mt-1">
-                    Soporta PDFs completos, fotos/escaneos e informes de texto (hasta 20MB)
+                    Soporta Excel (.xlsx), Word (.docx), PDFs, imágenes y texto (hasta 20MB)
                   </p>
                 </div>
               </div>
@@ -288,38 +303,51 @@
               </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <!-- Botones alineados uno al lado del otro en una sola fila responsiva -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <button
+                type="button"
+                data-preset="cuit"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
+                title="Verificar y extraer CUIT, Razón Social y Empresas"
+              >
+                <span class="p-1 rounded bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
+                  <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+                </span>
+                <span class="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">VERIFICAR CUIT y EMPRESAS</span>
+              </button>
+
               <button
                 type="button"
                 data-preset="evento"
-                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
               >
                 <span class="p-1 rounded bg-blue-100 text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
                 </span>
-                <span class="font-semibold text-slate-800 truncate">Datos Evento</span>
+                <span class="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">Datos Evento</span>
               </button>
 
               <button
                 type="button"
                 data-preset="medidas"
-                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
               >
                 <span class="p-1 rounded bg-emerald-100 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="ruler" class="w-3.5 h-3.5"></i>
                 </span>
-                <span class="font-semibold text-slate-800 truncate">Medidas Lote</span>
+                <span class="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">Medidas Lote</span>
               </button>
 
               <button
                 type="button"
                 data-preset="seguros"
-                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-2"
+                class="preset-btn text-left p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-xs font-medium text-slate-700 group flex items-center space-x-1.5"
               >
                 <span class="p-1 rounded bg-amber-100 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
                   <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
                 </span>
-                <span class="font-semibold text-slate-800 truncate">Seguros/Accesos</span>
+                <span class="font-semibold text-slate-800 truncate text-[11px] sm:text-xs">Seguros/Accesos</span>
               </button>
             </div>
           </div>
@@ -337,13 +365,14 @@
             <textarea
               id="fieldsInput"
               rows="2"
-              class="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-none font-mono"
+              class="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-y min-h-[52px] font-mono"
               placeholder="Ej: Nombre del evento, Fechas, Medidas de lote, Horario de armado, Tipo de seguro, Email o teléfono de envío"
             ></textarea>
 
             <!-- Chips de sugerencias rápidas -->
             <div class="flex flex-wrap gap-1.5 pt-1">
               <span class="text-[11px] text-slate-400 flex items-center mr-1">Añadir:</span>
+              <button type="button" class="chip-btn text-[11px] bg-slate-100 hover:bg-indigo-100 hover:text-indigo-800 text-slate-700 px-2 py-0.5 rounded-md transition-colors" data-chip="CUIT y Empresas">+ CUIT / Empresas</button>
               <button type="button" class="chip-btn text-[11px] bg-slate-100 hover:bg-blue-100 hover:text-blue-800 text-slate-700 px-2 py-0.5 rounded-md transition-colors" data-chip="Nombre del evento">+ Evento</button>
               <button type="button" class="chip-btn text-[11px] bg-slate-100 hover:bg-blue-100 hover:text-blue-800 text-slate-700 px-2 py-0.5 rounded-md transition-colors" data-chip="Fechas y horarios de armado">+ Fechas/Horarios</button>
               <button type="button" class="chip-btn text-[11px] bg-slate-100 hover:bg-blue-100 hover:text-blue-800 text-slate-700 px-2 py-0.5 rounded-md transition-colors" data-chip="Ubicación exacta">+ Ubicación</button>
@@ -353,22 +382,46 @@
             </div>
           </div>
 
-          <!-- 4. Área de Texto para la Solicitud Personalizada -->
+          <!-- 4. Área de Texto para la Solicitud Personalizada (Ventana Responsiva) -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
               <label for="promptInput" class="text-sm font-semibold text-slate-900 flex items-center space-x-2">
                 <i data-lucide="message-square-code" class="w-4 h-4 text-blue-600"></i>
                 <span>Solicitud personalizada</span>
               </label>
-              <span id="charCount" class="text-xs text-slate-400 font-mono">0 car.</span>
+              <div class="flex items-center space-x-2">
+                <!-- Controles para agrandar / achicar responsivamente la ventana -->
+                <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs text-slate-600 space-x-0.5">
+                  <button
+                    id="btnPromptCompact"
+                    type="button"
+                    title="Tamaño normal"
+                    class="px-2 py-0.5 rounded hover:bg-white hover:text-slate-900 transition-colors text-[11px] font-medium"
+                  >
+                    Normal
+                  </button>
+                  <button
+                    id="btnPromptExpand"
+                    type="button"
+                    title="Agrandar ventana de solicitud"
+                    class="px-2 py-0.5 rounded hover:bg-white hover:text-slate-900 transition-colors text-[11px] font-medium"
+                  >
+                    Agrandar
+                  </button>
+                </div>
+                <span id="charCount" class="text-xs text-slate-400 font-mono">0 car.</span>
+              </div>
             </div>
 
             <textarea
               id="promptInput"
               rows="4"
-              class="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-none leading-relaxed"
+              class="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-y min-h-[96px] leading-relaxed"
               placeholder="Escribe tu solicitud personalizada. Ej: Extrae nombre del evento, fecha, ubicación, medidas de lote según nombre de la empresa que se solicite o número de lote, horario de armado, que tipo de seguro solicitan para el ingreso al lugar, donde enviar la información que solicitan si mail o teléfono."
             ></textarea>
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>Puedes arrastrar la esquina inferior para cambiar el tamaño libremente.</span>
+            </div>
           </div>
 
           <!-- 5. Botón de Acción Principal -->
@@ -691,6 +744,10 @@
         const ext = name.split(".").pop().toLowerCase();
         switch (ext) {
           case "pdf": return "application/pdf";
+          case "xlsx": return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+          case "xls": return "application/vnd.ms-excel";
+          case "docx": return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+          case "doc": return "application/msword";
           case "png": return "image/png";
           case "jpg":
           case "jpeg": return "image/jpeg";
@@ -716,6 +773,10 @@
       // Plantillas Predefinidas (Presets)
       // ==========================================
       const presets = {
+        cuit: {
+          prompt: "Verifica y extrae de forma concisa y directa el CUIT de cada empresa o persona mencionada, la razón social, nombre de fantasía o empresa adjudicada, números de lote/stand asociados y estado fiscal o de acreditación si figura en el documento.",
+          fields: "Número de CUIT / CUIL, Razón Social / Nombre de la empresa, Nombre de fantasía o marca, Número de lote / stand o módulo asignado, Representante legal o persona de contacto",
+        },
         evento: {
           prompt: "Extrae de forma concisa y directa el nombre del evento, fechas/días, ubicación exacta, medidas de lote según empresa o número, horario de armado, tipo de seguro requerido y canal de envío (email/teléfono).",
           fields: "Nombre del evento, Fechas y días, Ubicación/Lugar, Horario de armado y desarme, Medidas de lote/stand, Tipo de seguro exigido para ingreso, Dónde enviar la información (email / teléfono)",
@@ -740,6 +801,23 @@
           }
         });
       });
+
+      // Controles para agrandar / achicar responsivamente la ventana de solicitud personalizada
+      const btnPromptCompact = document.getElementById("btnPromptCompact");
+      const btnPromptExpand = document.getElementById("btnPromptExpand");
+
+      if (btnPromptCompact) {
+        btnPromptCompact.addEventListener("click", () => {
+          promptInput.rows = 4;
+          promptInput.style.height = "110px";
+        });
+      }
+      if (btnPromptExpand) {
+        btnPromptExpand.addEventListener("click", () => {
+          promptInput.rows = 10;
+          promptInput.style.height = "240px";
+        });
+      }
 
       // Chips sugeridos para agregar a campos
       document.querySelectorAll(".chip-btn").forEach((chip) => {
@@ -868,11 +946,68 @@
         resultActions.classList.remove("hidden");
 
         // Parsear markdown con Marked
-        renderedContainer.innerHTML = marked.parse(markdownText);
+        let htmlContent = marked.parse(markdownText);
+
+        // Asegurar que cualquier mención de "No especificado", "No encontrado" o "No figura" se resalte en rojo llamativo
+        htmlContent = htmlContent.replace(
+          /(No especificado en el archivo|No especificado|No encontrado en el archivo|No encontrado|No figura en el documento|No figura)/gi,
+          (match) => `<span class="highlight-missing text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-200">${match}</span>`
+        );
+
+        renderedContainer.innerHTML = htmlContent;
         rawContent.textContent = markdownText;
+
+        // Añadir botones de copiado rápido a cada bloque/tabla/sección
+        addQuickCopyButtons();
 
         switchTab("rendered");
         refreshIcons();
+      }
+
+      function addQuickCopyButtons() {
+        // Añadir botón de copiado rápido a tablas generadas
+        renderedContainer.querySelectorAll("table").forEach((table) => {
+          if (table.parentElement.classList.contains("table-copy-wrapper")) return;
+          const wrapper = document.createElement("div");
+          wrapper.className = "relative group my-3 table-copy-wrapper";
+          table.parentNode.insertBefore(wrapper, table);
+          wrapper.appendChild(table);
+
+          const copyBtn = document.createElement("button");
+          copyBtn.type = "button";
+          copyBtn.title = "Copiar tabla";
+          copyBtn.className = "absolute top-2 right-2 px-2 py-1 text-[11px] font-medium bg-white/90 backdrop-blur border border-slate-200 rounded-md text-slate-700 shadow-xs hover:bg-blue-50 hover:text-blue-700 transition-all opacity-0 group-hover:opacity-100 flex items-center space-x-1";
+          copyBtn.innerHTML = `<span>Copiar tabla</span>`;
+          copyBtn.addEventListener("click", () => {
+            navigator.clipboard.writeText(table.innerText).then(() => {
+              copyBtn.innerHTML = `<span>¡Copiada!</span>`;
+              setTimeout(() => { copyBtn.innerHTML = `<span>Copiar tabla</span>`; }, 2000);
+            });
+          });
+          wrapper.appendChild(copyBtn);
+        });
+
+        // Añadir botón de copiado rápido a listas o bloques de información
+        renderedContainer.querySelectorAll("h2, h3").forEach((heading) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.title = "Copiar esta sección";
+          btn.className = "ml-2 inline-flex items-center text-[10px] font-normal px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 text-slate-500 align-middle transition-colors cursor-pointer";
+          btn.innerHTML = `<span>Copiar sección</span>`;
+          btn.addEventListener("click", () => {
+            let sectionText = heading.innerText.replace("Copiar sección", "").trim() + "\n";
+            let next = heading.nextElementSibling;
+            while (next && !["H2", "H3"].includes(next.tagName)) {
+              sectionText += next.innerText + "\n";
+              next = next.nextElementSibling;
+            }
+            navigator.clipboard.writeText(sectionText.trim()).then(() => {
+              btn.innerHTML = `<span>¡Copiado!</span>`;
+              setTimeout(() => { btn.innerHTML = `<span>Copiar sección</span>`; }, 2000);
+            });
+          });
+          heading.appendChild(btn);
+        });
       }
 
       // ==========================================

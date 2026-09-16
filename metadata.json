@@ -1,6 +1,6 @@
 {
   "name": "Analizador de Documentos",
-  "description": "Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, imágenes y texto con Gemini AI.",
+  "description": "Aplicación web SPA para analizar y extraer datos estructurados de documentos PDF, Excel (.xlsx), Word (.docx), imágenes y texto con Gemini AI.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
