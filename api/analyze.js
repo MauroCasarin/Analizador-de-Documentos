@@ -323,16 +323,44 @@ REGLAS DE VERIFICACIÓN DE CUIT / CUIL Y EMPRESAS (RAZÓN SOCIAL):
       console.error("GROQ LIST ERROR", e); modelName = hasImage ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
     }
 
-    const response = await groq.chat.completions.create({
-      model: modelName,
-      messages: [
-        { role: "system", content: systemInstruction },
-        { role: "user", content: contentArray }
-      ],
-      temperature: 0.1,
-    });
-
-    const resultText = response.choices[0]?.message?.content;
+    let response;
+    let resultText;
+    let attempt = 0;
+    
+    while (attempt < 2) {
+      try {
+        response = await groq.chat.completions.create({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: contentArray }
+          ],
+          temperature: 0.1,
+        });
+        resultText = response.choices[0]?.message?.content;
+        break; // Éxito, salir del bucle
+      } catch (err) {
+        // Si el error es 413 (Payload Too Large) o 429 (Rate Limit por tokens excedidos)
+        if (err.status === 413 || (err.status === 429 && err.message?.includes("tokens"))) {
+          console.warn("Groq Token Limit alcanzado. Truncando el documento e intentando nuevamente...");
+          attempt++;
+          if (attempt >= 2) throw err; // Lanza el error si falla de nuevo
+          
+          // Truncar el texto en contentArray
+          // Reducir la longitud de las partes de texto para ajustarse al límite de ~8000 tokens (~24000 caracteres)
+          let totalCharsAllowed = 24000;
+          for (let i = 0; i < contentArray.length; i++) {
+            if (contentArray[i].type === "text" && contentArray[i].text.length > totalCharsAllowed) {
+               // Dejamos un mensaje indicando la reducción
+               const truncated = contentArray[i].text.substring(0, totalCharsAllowed);
+               contentArray[i].text = truncated + "\n\n[NOTA DEL SISTEMA: EL DOCUMENTO FUE TRUNCADO AQUÍ DEBIDO A LÍMITES DE PROCESAMIENTO DE GROQ]";
+            }
+          }
+        } else {
+          throw err; // Otro tipo de error (ej. auth)
+        }
+      }
+    }
 
     if (!resultText) {
       throw new Error("No se pudo obtener respuesta del modelo de Groq.");
